@@ -1,0 +1,13 @@
+{
+  "builtin": "False",
+  "default_enabled": "True",
+  "type": "extension",
+  "rocket_mode_compatible": "False",
+  "name": "My PyRevit Tools",
+  "description": "Custom pyRevit tools and automation scripts for Revit",
+  "author": "sonus",
+  "author-url": "",
+  "url": "",
+  "image": "",
+  "dependencies": []
+}
