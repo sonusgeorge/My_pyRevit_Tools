@@ -1,0 +1,9 @@
+title: "Batch Sheet\nEdit"
+tooltip: >-
+  Batch-change sheet names or sheet numbers using prefix, suffix,
+  case-sensitive find-and-replace, or sequential numbering rules.
+  Shows a preview and applies the batch as one undoable transaction.
+author: Pyrevit Tools
+context: doc-project
+min_revit_version: 2022
+max_revit_version: 2027
