@@ -1,0 +1,7 @@
+# Controls the left-to-right order of panels in the SG Tools ribbon tab.
+# Panels not listed here still appear, but after the listed ones.
+# Dev is last so work-in-progress tools never sit next to shipped ones.
+
+layout:
+  - Sheets
+  - Dev

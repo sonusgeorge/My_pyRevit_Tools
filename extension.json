@@ -1,0 +1,9 @@
+{
+    "type": "extension",
+    "rocket_mode_compatible": "True",
+    "name": "SG-Tools",
+    "description": "Custom Revit utility tools for civil/infrastructure BIM.",
+    "author": "Sonu S George",
+    "url": "https://github.com/sonusgeorge/My_pyRevit_Tools.git",
+    "dependencies": []
+}

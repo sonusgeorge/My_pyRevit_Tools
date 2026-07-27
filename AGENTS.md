@@ -1,138 +1,371 @@
 # AGENTS.md
 
+This is the primary context file for this repository. Several different
+agents work on this project from several different machines. Read this
+file fully before doing anything else.
+
 ## Project purpose
 
-This repository is for designing, building, testing, and shipping reliable pyRevit tools.
+Designing, building, testing, and shipping reliable pyRevit tools for
+civil / infrastructure BIM work.
 
-Treat each tool as a small product. Build the smallest useful version first, prove that it works, and only then add features and production-quality UI.
+Treat each tool as a small product. Build the smallest useful version
+first, prove that it works, and only then add features and production
+quality UI.
+
+## Who you are working with
+
+The user is a **civil BIM engineer**, not a professional programmer, and
+is **actively learning Python**. This changes how you should work:
+
+- Explain what you did and why, in plain language, with concrete examples.
+- Prefer clear, explicit code over clever or compact code, even when the
+  clever version is shorter.
+- Comment the non-obvious parts. Assume the reader knows Revit well and
+  Python only a little.
+- When you use a Python idea the user may not have met yet (list
+  comprehension, decorator, context manager, lambda), add a short comment
+  saying what it does.
+- Do not silently fix something and move on. Say what was wrong, why it
+  was wrong, and what the fix does.
+- Teaching is part of the job, but do not turn every reply into a lecture.
+  Explain what is relevant to the change at hand.
 
 ## Communication
 
-- The user often uses speech-to-text. Infer obvious transcription mistakes from context (for example, "told" may mean "tool").
+- The user often uses speech-to-text. Infer obvious transcription
+  mistakes from context (for example, "told" may mean "tool").
 - Do not repeatedly correct minor wording or spelling mistakes.
-- Ask a concise clarification only when an ambiguity would materially change the tool's behavior, data, safety, or architecture.
-- Explain Revit and programming concepts in plain language and give concrete examples when useful.
-- Clearly distinguish between what has been verified locally and what still needs to be tested inside Revit.
+- Ask a concise clarification only when an ambiguity would materially
+  change the tool's behavior, data, safety, or architecture.
+- Always distinguish clearly between what you verified and what is still
+  untested. Never imply a tool was tested in Revit unless it actually ran
+  there.
 
-## Required workflow for every tool
+---
 
-Follow these phases in order. Do not jump directly to a polished production implementation.
+## Working environments
 
-### Phase 1: Research and implementation proposal
+Work happens from more than one place. **Check which one you are in
+before planning any testing.**
 
-Before writing the tool:
+| Environment | Revit available? | How to tell |
+|---|---|---|
+| The user's Windows PC | Yes | `_dev/revit_probe.py` connects |
+| VPS / Claude Code web / any other machine | No | probe fails to connect |
 
-1. Understand the user problem, desired outcome, affected Revit elements, and expected workflow.
-2. Inspect the repository for existing patterns or reusable code.
-3. Research the relevant Revit API. Prefer [RevitAPIDocs](https://www.revitapidocs.com/) for fast API lookup and use Autodesk's official documentation or other reliable sources when additional confirmation is needed.
-4. Confirm that the researched API applies to the Revit version targeted by the tool. Never assume that an API is available in every version.
-5. Identify important implementation constraints, including:
-   - required selections and inputs;
-   - document and view requirements;
-   - transaction and regeneration needs;
-   - read-only, linked-model, group, design-option, and worksharing limitations when relevant;
-   - cancellation, empty-result, and invalid-element behavior;
-   - IronPython or CPython compatibility and external dependencies.
-6. Present a short implementation proposal containing:
-   - the recommended approach;
-   - the main Revit API classes and methods;
-   - the proposed user workflow;
-   - important risks and edge cases;
-   - what will be included in the basic version and what will wait for later.
+To check, run:
 
-If several approaches have meaningful tradeoffs, explain them and recommend one. Obtain the user's decision before implementing when the choice would materially change the result. Otherwise, proceed with the recommended approach.
+```bash
+python _dev/revit_probe.py -c "print(doc.Title)"
+```
 
-### Phase 2: Build a working basic version
+If that connects, you can test live. If it does not, you are on a machine
+without Revit — write code carefully and hand the user a manual test plan.
+Never assume Revit is reachable.
 
-Create the smallest end-to-end version that demonstrates the core value of the tool.
+### Live testing on the user's PC
 
-- Keep the logic simple and readable.
-- Use the project's existing pyRevit bundle conventions. If none exist yet, establish a conventional extension/tab/panel/button structure.
-- Separate Revit interaction from reusable business logic when practical.
-- Keep transactions as small and safe as possible.
-- Handle user cancellation without showing an error.
-- Avoid elaborate forms, settings, icons, telemetry, and optional features at this stage unless the core workflow requires them.
-- Avoid unnecessary third-party packages, especially packages unavailable in pyRevit's selected Python engine.
-- Run every useful local check available, such as syntax validation, focused unit tests for pure logic, and static inspection.
+The `mcp-server-for-revit-python` extension runs a pyRevit Routes server
+on `127.0.0.1:48884`. `_dev/revit_probe.py` sends Python to the live Revit
+session and prints the result.
 
-At the end of this phase, report what works, what was verified, and what requires an in-Revit test.
+Use it to check assumptions in seconds instead of writing a whole button
+and reloading pyRevit:
 
-### Phase 3: Improve features incrementally
+```bash
+python _dev/revit_probe.py my_probe.py
+python _dev/revit_probe.py -c "print(len(list(DB.FilteredElementCollector(doc).OfClass(DB.ViewSheet))))"
+```
 
-Only improve the tool after the basic workflow is working.
+Inside a probe you already have `doc`, `uidoc`, `DB`, and `revit`.
 
-- Add one coherent feature or small feature group at a time.
-- Preserve the proven core workflow while extending it.
-- Prioritize features by user value, reliability, and implementation risk.
-- Re-test the existing workflow after each material change.
-- Do not mix a large functional rewrite with major UI polish unless necessary.
-- Keep optional enhancements separate from the minimum production requirements.
+**Rules for probes:**
 
-Before a substantial expansion, briefly state what will change and how it affects testing.
+- Keep them **read-only**. This is the user's live model, not a sandbox.
+  Never create, modify, or delete elements in a probe.
+- A passing probe is not a passing tool. It proves an API assumption. It
+  does not prove the button works. Before shipping, the button itself must
+  be clicked once in Revit.
+- The probe host runs IronPython 2.7, the same engine our buttons use, so
+  language behaviour matches.
 
-### Phase 4: Test and make the tool error-resistant
+---
 
-Testing is a shared process because Revit may not be available in the development environment.
+## Git workflow
 
-The agent must:
+The repository is <https://github.com/sonusgeorge/My_pyRevit_Tools.git>
+and the working branch is `main`.
 
-1. Run all relevant automated or local checks that do not require Revit.
-2. Review transaction boundaries, failure behavior, cancellation paths, and partial-update risks.
-3. Test pure data-processing logic separately from the Revit API where practical.
-4. Never claim that a tool was tested in Revit unless it was actually executed there.
-5. When the agent cannot run Revit, provide a precise manual test plan containing:
-   - required model setup;
-   - exact steps to run the tool;
-   - expected visible results;
-   - how to verify the model changes;
-   - cancellation and invalid-input tests;
-   - relevant edge cases;
-   - undo/rollback checks;
-   - the error details or pyRevit output the user should send back if a test fails.
-6. Use the user's test results to diagnose and fix problems, then provide focused retest steps.
+On the user's PC the repo lives at, and is loaded directly from:
 
-Continue the test/fix/retest cycle until known failures are resolved. Do not describe the tool as error-free; describe the tests completed and any remaining limitations.
+```
+%APPDATA%\pyRevit\Extensions\SG-Tools.extension
+```
 
-### Phase 5: Productionize and ship
+so a `git pull` changes the live toolbar after a pyRevit reload.
 
-Begin this phase only after the core behavior has been validated.
+**Start of every session — before changing anything:**
 
-Production work should include the relevant items below:
+```bash
+git pull --rebase origin main
+```
 
-- a clear button name, tooltip, help text, and author/version metadata;
-- suitable `pyrevit.forms` dialogs or a WPF interface when the workflow needs richer interaction;
-- sensible defaults and validation close to each input;
-- clear success, warning, empty-result, and error messages;
-- progress feedback and cancellation for long-running operations;
-- safe handling of no document, wrong document type, wrong view, empty selection, deleted elements, and user cancellation as applicable;
-- transaction rollback or safe partial-failure behavior;
-- useful logging and actionable error reporting without exposing confusing internal details;
-- compatibility metadata for supported Revit and pyRevit/Python versions;
-- button/icon assets and bundle configuration;
-- concise usage and testing documentation;
-- a final regression test of the complete workflow.
+**End of every session — before finishing:**
 
-Before calling a tool ready for production, provide a release checklist and identify exactly which checks were performed locally and which were confirmed by the user in Revit.
+```bash
+git add -A
+git commit -m "Clear description of what changed"
+git push origin main
+```
+
+Because work moves between machines, an unpushed change is a lost change.
+If the user seems to be wrapping up, remind them to push.
+
+`.gitattributes` normalises line endings to LF. Do not remove it — without
+it, files edited on the VPS appear 100% modified on Windows.
+
+---
+
+## Python engine — read this before writing any code
+
+**Write IronPython 2.7 compatible code. This is not optional.**
+
+Verified on 2026-07-27 on the user's machine (Revit 2027, pyRevit 6.4.0):
+the engine reports `2.7.12 (IronPython on .NET 10)`. IronPython 2.7
+(`IPY2712PR`) is the pyRevit default engine, set in `pyRevitfile`.
+
+### Why not CPython 3
+
+pyRevit switches a script to CPython 3.12 if `#! python3` is the **first
+line** of `script.py`. Do not do this.
+
+In pyRevit 6.4, `pyrevit.forms` is a facade (`pyrevit/forms/__init__.py`).
+Under IronPython it loads a full backend. Under CPython it loads
+`forms/_cpy.py`, where **every single member raises
+`PyRevitCPythonNotSupported`** — `alert`, `ask_for_string`, `pick_file`,
+`SelectFromList`, `ProgressBar`, `WPFWindow`, all of them. Separately,
+`framework.py` only imports the `wpf` module when running IronPython, so
+**WPF and XAML do not work under CPython at all.**
+
+The user wants rich WPF interfaces eventually. That requires IronPython.
+
+Only consider CPython for a tool that genuinely needs a pip package such
+as `pandas`, and only if it needs no UI beyond the output window. Treat
+that as an explicit, discussed exception, not a default.
+
+Do not switch the global engine to IronPython 3.4 either. It is installed,
+but the setting is global and would also affect EF-Tools, pyRevit's own
+tools, and the Routes extension, which are all IronPython 2 code.
+
+### What IronPython 2.7 means in practice
+
+- **No f-strings.** Use `"{}".format(value)`.
+- **Keep `# -*- coding: UTF-8 -*-`** as the first line of every script.
+- **Integer division truncates.** `5 / 2` is `2`, not `2.5` — verified in
+  this engine. This is a real hazard for quantity and setting-out
+  calculations. Use `5.0 / 2`, or `float(a) / b`, whenever a fraction
+  matters.
+- `print` behaves as a statement; the pyRevit output window is the normal
+  way to show results.
+- Standard library is Python 2.7's. No `pathlib`, no `dataclasses`,
+  no `typing` syntax.
+- Third-party pip packages are generally unavailable.
+
+---
+
+## Repository layout
+
+```
+SG-Tools.extension/
+├── AGENTS.md                  <- this file, the main context
+├── CLAUDE.md                  <- points here
+├── extension.json             <- extension metadata
+├── .gitattributes             <- line ending normalisation
+├── _dev/                      <- dev helpers, ignored by pyRevit
+│   └── revit_probe.py
+├── lib/                       <- shared code, auto-added to sys.path
+│   └── sg/
+│       ├── __init__.py
+│       └── naming.py
+└── SG_Tools.tab/
+    ├── bundle.yaml            <- panel order
+    ├── Dev.panel/             <- work in progress
+    └── Sheets.panel/
+        └── List Sheets.pushbutton/
+            ├── bundle.yaml
+            ├── icon.png
+            └── script.py
+```
+
+pyRevit only loads `*.tab` folders and `lib/`. Anything else at the root
+(`_dev/`, markdown files) is ignored, which is why dev helpers are safe to
+keep in the repo.
+
+### The `lib/` folder
+
+pyRevit automatically adds `<extension>/lib` to the Python path for every
+script in the extension. So any script can do:
+
+```python
+from sg.naming import natural_sort_key
+```
+
+with no path setup.
+
+**Move code into `lib/sg/` once it is used by a second tool, not before.**
+Speculative helpers written for one imaginary future caller are harder to
+delete than to write. Each helper needs a docstring explaining what it
+does and why it exists.
+
+---
+
+## The Dev panel convention
+
+Every new tool starts in `SG_Tools.tab/Dev.panel/`.
+
+It moves to its real panel only when it ships — meaning the Definition of
+Done below is met, including a real click-test inside Revit. See
+`SG_Tools.tab/Dev.panel/README.md` for the move checklist.
+
+This keeps half-finished tools clearly separated from trusted ones, which
+matters because these tools run against real project models.
+
+---
+
+## Tool documentation standard
+
+pyRevit builds the button tooltip from the **script docstring**, and the
+docstring overrides any `tooltip:` in `bundle.yaml`. So the docstring is
+both the code documentation and the user-facing help. Write it for the
+person hovering over the button.
+
+Every `script.py` starts with this block:
+
+```python
+# -*- coding: UTF-8 -*-
+"""One line saying what the tool does.
+
+Description:
+Two or three sentences. What it does, and what it changes if anything.
+
+How to use:
+1. Numbered steps, starting from what the user must select or open.
+2. Keep it short.
+
+Requirements:
+- What must be true before running (open project, selection, view type).
+
+Notes:
+- Behaviour worth knowing that is not obvious.
+
+Limitations / to-do:
+- Known gaps, planned work, anything deliberately not handled.
+
+--------------------------------------------------
+Status : In development | Shipped
+Version: 1.0
+Updated: YYYY-MM-DD
+"""
+```
+
+Keep it complete but compact — enough that the user knows what the tool
+does and what it will touch, without a wall of text. Update `Version` and
+`Updated` whenever behaviour changes. Put the button title and author in
+`bundle.yaml`, not in the docstring.
+
+---
+
+## Workflow — scale it to the risk
+
+Not every tool needs the same ceremony. Choose the track by what the tool
+touches, and say which track you are on.
+
+### Track A — read-only tools
+
+Listing, auditing, reporting, exporting. Nothing in the model changes.
+
+1. Confirm the goal and the output format.
+2. Probe the API against the live model if Revit is reachable.
+3. Build it in `Dev.panel`.
+4. User clicks it once in Revit.
+5. Ship it — move the folder, update the docstring status.
+
+No written proposal needed. If the tool turns out to need a transaction,
+stop and switch to Track B.
+
+### Track B — tools that modify the model
+
+Creating, renaming, deleting, bulk parameter edits. Anything inside a
+transaction. **No shortcuts here.** A bug damages real project data.
+
+**1. Research and propose.** Before writing code:
+
+- Understand the problem, the affected elements, and the expected workflow.
+- Check the repo for existing patterns to reuse.
+- Research the Revit API — [RevitAPIDocs](https://www.revitapidocs.com/)
+  for fast lookup, Autodesk official docs to confirm.
+- Confirm the API exists in the targeted Revit version. Never assume.
+- Probe the live model to confirm your assumptions.
+- Identify constraints: required selection and inputs; document and view
+  requirements; transaction and regeneration needs; read-only, linked
+  model, group, design option and worksharing limits; cancellation, empty
+  result and invalid element behaviour.
+- Present a short proposal: recommended approach, main API classes, user
+  workflow, risks and edge cases, what is in the first version and what
+  waits.
+
+If approaches have meaningful tradeoffs, explain them and recommend one.
+Get the user's decision when the choice materially changes the result.
+
+**2. Build the smallest working version** in `Dev.panel`.
+
+- Show the user what will change **before** committing the transaction.
+- One transaction, wrapped so a failure rolls back cleanly.
+- Handle cancellation without showing an error.
+- Never modify more elements than the user expects.
+- Skip elaborate UI, settings, and optional features at this stage.
+
+**3. Improve one feature at a time**, re-testing the core workflow after
+each change. Do not mix a functional rewrite with UI polish.
+
+**4. Test hard.** Automated checks and probes where possible, then a
+manual test plan for the user covering: required model setup; exact steps;
+expected results; how to verify the model changed correctly; cancellation;
+invalid input; edge cases; undo behaviour; and what error output to send
+back if it fails. Fix, retest, repeat.
+
+**5. Productionise and ship.** Clear name, docstring documentation, icon,
+`pyrevit.forms` or WPF as the workflow needs, sensible defaults, validation
+near each input, clear success/warning/empty/error messages, progress and
+cancellation for long operations, and a final run of the whole workflow.
+Then move it out of `Dev.panel`.
+
+---
 
 ## Coding principles
 
-- Optimize first for correctness, model safety, and maintainability.
-- Follow established repository conventions instead of introducing a new pattern for each tool.
+- Optimise first for correctness, model safety, and readability.
+- Follow the conventions already in this repo rather than inventing a new
+  pattern per tool.
 - Prefer explicit, understandable Revit API code over clever abstractions.
 - Keep Revit API objects within valid document and transaction lifetimes.
 - Do not silently modify more elements than the user expects.
-- Do not swallow unexpected exceptions. Give the user an actionable message and preserve diagnostic details for troubleshooting.
-- Treat selections, names, parameter values, and form input as untrusted input that must be validated.
-- Preserve the user's existing work and unrelated repository changes.
+- Do not swallow unexpected exceptions. Give an actionable message and
+  keep the diagnostic detail.
+- Treat selections, names, parameter values, and form input as untrusted.
+- Preserve the user's existing work and unrelated changes.
 
 ## Definition of done
 
-A tool is complete only when:
+A tool is shipped only when:
 
-- its intended behavior and supported Revit versions are documented;
-- the core workflow has been tested successfully inside Revit by the agent or the user;
-- relevant normal, cancellation, invalid-input, and edge-case scenarios have been checked;
-- known errors found during testing have been fixed and retested;
+- its behaviour and supported Revit versions are documented in the
+  docstring;
+- the core workflow has been run successfully **inside Revit**;
+- normal, cancellation, invalid-input, and edge-case scenarios were checked;
+- errors found during testing were fixed and retested;
 - the interface is understandable to its intended users;
-- installation and usage instructions are available;
-- remaining limitations are explicitly documented.
+- remaining limitations are written down in the docstring;
+- it has been moved out of `Dev.panel`;
+- the work is committed and pushed to `main`.

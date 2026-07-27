@@ -1,0 +1,8 @@
+# Keep line endings consistent across Windows, VPS (Linux) and Claude Code web.
+# Without this, a file edited on Linux looks 100% changed when opened on Windows.
+
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.dll binary

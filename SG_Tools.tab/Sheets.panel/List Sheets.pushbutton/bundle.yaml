@@ -1,0 +1,7 @@
+title: List Sheets
+author: Sonu S George
+
+# No `tooltip:` here on purpose.
+# pyRevit builds the button tooltip from the script docstring when one
+# exists, and the docstring wins over this file. Keeping the tooltip in
+# script.py means the documentation sits next to the code it describes.
