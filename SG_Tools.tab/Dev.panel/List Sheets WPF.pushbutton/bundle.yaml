@@ -1,5 +1,0 @@
-title: List Sheets WPF
-author: Sonu S George
-
-# No `tooltip:` -- pyRevit builds the tooltip from the script docstring,
-# which overrides this file. See AGENTS.md.

@@ -8,9 +8,11 @@ Custom pyRevit tools for civil / infrastructure BIM work.
 
 | Panel | Tool | Status | What it does |
 |---|---|---|---|
-| Sheets | List Sheets | Shipped | Lists every sheet in the model, sorted naturally, with clickable links |
+| Sheets | List Sheets | Shipped | Searchable window listing every sheet; double-click to open |
+| Dev | Reload | Shipped | Restarts the pyRevit session without leaving this tab |
 
-Work-in-progress tools live in the **Dev** panel until they ship.
+The **Dev** panel holds work-in-progress tools until they ship, plus
+permanent development utilities like Reload.
 
 ## Requirements
 
