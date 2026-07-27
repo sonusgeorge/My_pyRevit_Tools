@@ -1,10 +1,18 @@
 # Dev panel
 
-Work-in-progress tools live here.
+This panel holds two different kinds of thing.
 
-A tool stays in this panel until it is shipped. Shipping means the
-Definition of Done in `AGENTS.md` is met — including a real click-test
-inside Revit.
+**1. Work-in-progress tools.** A new tool stays here until it is shipped.
+Shipping means the Definition of Done in `AGENTS.md` is met — including a
+real click-test inside Revit. Then it moves to its real panel.
+
+**2. Permanent development utilities.** Tools that only exist to make
+building tools easier, and are never promoted. They stay here forever.
+`Reload.pushbutton` is one: it restarts the pyRevit session so new buttons
+appear, saving a trip to the pyRevit tab.
+
+The difference shows in the docstring `Status:` line — a WIP tool says
+`In development`, a permanent utility says `Shipped` and simply lives here.
 
 ## Moving a tool out
 

@@ -1,0 +1,14 @@
+title: Reload
+author: Sonu S George
+
+# Available with no document open -- you often reload before opening a model.
+context: zero-doc
+
+# A reload must run on a fresh engine, otherwise the old session's loaded
+# modules linger and the reload is only half effective. This is the same
+# setting pyRevit's own Reload button uses.
+engine:
+  clean: true
+
+# No `tooltip:` -- pyRevit builds the tooltip from the script docstring,
+# which overrides this file. See AGENTS.md.
