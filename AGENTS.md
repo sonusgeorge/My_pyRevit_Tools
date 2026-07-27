@@ -174,6 +174,42 @@ tools, and the Routes extension, which are all IronPython 2 code.
 
 ---
 
+## WPF notes
+
+Hard-won findings. Each of these cost real debugging time once.
+
+**Reloading.** You only need to reload pyRevit after adding, renaming, or
+moving a *button*, because that changes the ribbon. Editing code inside an
+existing button needs no reload — pyRevit re-reads `script.py` and its
+XAML on every click. Use **SG Tools → Dev → Reload** when you do need one.
+
+**`DataGrid.RowBackground` breaks selection highlighting.** .NET applies
+it as a *local value* on each row, and in WPF a local value beats a style
+trigger. An `IsSelected` trigger in `DataGrid.RowStyle` will silently
+never paint. Set the row background as a `Setter` inside `RowStyle`
+instead, so trigger and default sit at the same precedence level. Also
+override `DataGrid.CellStyle` to transparent, or the default cell
+background covers the row colour.
+
+**WPF has no `LetterSpacing`.** That is a UWP/WinUI property. Putting it
+in XAML makes the whole file fail to parse at runtime.
+
+**XML comments cannot contain `--`.** A comment like `<!-- a -- b -->` is
+not well-formed XML and the window will not load. Easy to write by
+accident when using dashes as punctuation.
+
+**Binding to Python objects works.** WPF reads plain IronPython attributes
+by reflection — `{Binding my_attr}` finds `self.my_attr`. pyRevit's own
+`SelectFromList.xaml` relies on this. A typo gives a blank column rather
+than an error, so check binding names first when a column is empty.
+
+**Sharing styles between tools, when the time comes.** `forms.WPFWindow`
+has a `merge_resource_dict` method, and `_resolve_xaml_source` merges a
+`<name>.ResourceDictionary.<locale>.xaml` sitting beside the window XAML
+*before* parsing. That is the mechanism to reuse the SG palette across
+tools without the `StaticResource` timing problem. Currently the palette
+is defined inline in each window's `<Window.Resources>`.
+
 ## Repository layout
 
 ```
