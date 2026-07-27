@@ -47,3 +47,39 @@ def natural_sort_key(text):
             # lower() so "a10" and "A10" sort together
             key.append((0, chunk.lower()))
     return key
+
+
+def matches_search(search_text, *values):
+    """Return True if the search text appears in any of the given values.
+
+    Used to filter lists as the user types in a search box.
+
+    An empty search matches everything, which is what a user expects
+    from an empty search box -- clearing the box shows the full list
+    again rather than nothing.
+
+    Args:
+        search_text (str): what the user typed. None or blank matches all.
+        *values (str): the fields to search, for example a sheet number
+            and a sheet name. None entries are skipped.
+
+    Returns:
+        bool: True if the row should stay visible.
+
+    Examples:
+        matches_search("101", "C-101", "Site Plan")  -> True
+        matches_search("site", "C-101", "Site Plan") -> True
+        matches_search("zzz", "C-101", "Site Plan")  -> False
+        matches_search("", "C-101", "Site Plan")     -> True
+    """
+    if search_text is None:
+        return True
+
+    needle = search_text.strip().lower()
+    if not needle:
+        return True
+
+    for value in values:
+        if value and needle in value.lower():
+            return True
+    return False
